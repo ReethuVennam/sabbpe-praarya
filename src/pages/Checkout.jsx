@@ -78,6 +78,9 @@ export default function Checkout() {
           price: getPrice(item),
         }))
 
+      const orderRef = `PRAARYA-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const frontendUrl = window.location.origin
+
       let orderId = ''
       if (orderItems.length > 0) {
         try {
@@ -85,6 +88,7 @@ export default function Checkout() {
             customerId,
             addressId,
             paymentMethod: 'SABBPE',
+            gatewayRef: orderRef,
             items: orderItems,
           })
           orderId = data.data?.orderId || data.data?.order_id || ''
@@ -98,9 +102,6 @@ export default function Checkout() {
       await Promise.all(items.map((item) =>
         cartAPI.remove({ customerId, cartItemId: item.cartItemId || item.id }).catch(() => {})
       ))
-
-      const orderRef = `PRAARYA-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const frontendUrl = window.location.origin
 
       const tokenRes = await sabbpeAPI.getToken(orderRef)
       const initRes = await sabbpeAPI.initiate(

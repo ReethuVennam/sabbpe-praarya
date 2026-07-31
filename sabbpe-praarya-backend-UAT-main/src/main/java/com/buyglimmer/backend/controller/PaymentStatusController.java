@@ -48,14 +48,15 @@ public class PaymentStatusController {
     @PostMapping("/sabbpe/callback")
     public ResponseEntity<String> sabbpeCallback(
             @RequestBody Map<String, String> request) {
-        String orderId = request.get("merchant_order_ref");
-        String status = request.get("payment_status");
-        logger.info("SabbPe callback received: orderId={} status={}", orderId, status);
-        if (orderId == null || status == null) {
+        String gatewayRef = request.get("merchant_order_ref");
+        String status = request.get("status");
+        String gatewayTxnId = request.get("master_transaction_id");
+        logger.info("SabbPe callback received: gatewayRef={} status={} txnId={}", gatewayRef, status, gatewayTxnId);
+        if (gatewayRef == null || status == null) {
             logger.warn("SabbPe callback missing required fields");
             return ResponseEntity.badRequest().body("missing fields");
         }
-        paymentStatusService.updateOrderPaymentStatusDirect(orderId, status.toUpperCase());
+        paymentStatusService.updateOrderPaymentStatusByGatewayRef(gatewayRef, status.toUpperCase(), gatewayTxnId);
         return ResponseEntity.ok("OK");
     }
 }

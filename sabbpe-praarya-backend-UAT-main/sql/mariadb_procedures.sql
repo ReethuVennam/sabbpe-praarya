@@ -240,13 +240,14 @@ CREATE PROCEDURE sp_create_order(
   IN p_customer_id VARCHAR(36),
   IN p_address_id VARCHAR(36),
   IN p_coupon_code VARCHAR(40),
-  IN p_payment_method VARCHAR(20)
+  IN p_payment_method VARCHAR(20),
+  IN p_gateway_ref VARCHAR(255)
 )
 BEGIN
   DECLARE v_order_id VARCHAR(36);
   SET v_order_id = UUID();
 
-  INSERT INTO orders(id, customer_id, address_id, total_amount, status, payment_status, meta, created_at)
+  INSERT INTO orders(id, customer_id, address_id, total_amount, status, payment_status, gateway_ref, meta, created_at)
   VALUES (
     v_order_id,
     p_customer_id,
@@ -254,6 +255,7 @@ BEGIN
     0,
     'pending',
     'pending',
+    IFNULL(p_gateway_ref, ''),
     JSON_OBJECT('coupon', IFNULL(p_coupon_code, ''), 'paymentMethod', p_payment_method),
     CURRENT_TIMESTAMP
   );

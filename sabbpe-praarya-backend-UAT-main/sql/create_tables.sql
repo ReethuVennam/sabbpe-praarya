@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total_amount DECIMAL(12,2) DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
   payment_status VARCHAR(20) DEFAULT 'pending',
+  gateway_ref VARCHAR(255),
   meta JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customer(id)

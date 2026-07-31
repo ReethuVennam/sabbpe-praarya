@@ -101,7 +101,8 @@ public final class FintechDtos {
             @NotBlank String addressId,
             String couponCode,
             @NotBlank String paymentMethod,
-            @NotEmpty List<@Valid OrderItemInput> items
+            @NotEmpty List<@Valid OrderItemInput> items,
+            String gatewayRef
     ) {
     }
 
@@ -139,7 +140,11 @@ public final class FintechDtos {
             BigDecimal totalAmount,
             String status,
             String paymentStatus,
-            String createdAt
+            String createdAt,
+            String paymentMethod,
+            Integer itemCount,
+            String productNames,
+            String firstImage
     ) {
     }
 

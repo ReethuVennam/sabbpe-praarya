@@ -51,7 +51,8 @@ public class OrderProcedureService {
                 request.addressId(),
                 request.couponCode(),
                 request.paymentMethod(),
-                List.of(item)
+                List.of(item),
+                null
         );
         
         // Create order

@@ -131,20 +131,30 @@ export default function Profile() {
                 ) : (
                   <div className="space-y-3">
                     {orders.map((order) => (
-                      <div key={order.order_id || order.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-xl border border-gray-100 hover:shadow-md transition-all">
-                        <div>
-                          <p className="font-semibold text-gray-900">Order #{(order.order_id || order.id)?.slice(0, 12)}</p>
-                          <p className="text-sm text-gray-400">{order.created_at || order.createdAt || 'N/A'}</p>
+                      <div key={order.order_id || order.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition-all">
+                        {order.firstImage && (
+                          <img src={order.firstImage} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{(order.order_id || order.id)?.slice(0, 12)}</p>
+                          {order.productNames && (
+                            <p className="text-sm text-gray-500 mt-0.5 truncate">{order.productNames}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            {order.created_at || order.createdAt || 'N/A'}
+                            {order.itemCount ? ` · ${order.itemCount} item${order.itemCount !== 1 ? 's' : ''}` : ''}
+                            {order.paymentMethod ? ` · ${order.paymentMethod}` : ''}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <p className="font-bold text-[#6c5ce7]">{(order.totalAmount ?? order.total_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                            order.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-600' :
+                            (order.paymentStatus || order.payment_status || '') === 'paid' ? 'bg-emerald-50 text-emerald-600' :
                             order.status === 'placed' ? 'bg-blue-50 text-blue-600' :
                             'bg-yellow-50 text-yellow-600'
                           }`}>
-                            {order.payment_status || order.status || 'pending'}
+                            {order.paymentStatus || order.payment_status || order.status || 'pending'}
                           </span>
-                          <p className="font-bold text-[#6c5ce7]">{order.total_amount || 0}</p>
                         </div>
                       </div>
                     ))}

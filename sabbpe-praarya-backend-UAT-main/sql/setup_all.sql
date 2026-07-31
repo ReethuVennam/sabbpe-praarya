@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total_amount DECIMAL(12,2) DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
   payment_status VARCHAR(20) DEFAULT 'pending',
+  gateway_ref VARCHAR(255),
   meta JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -254,13 +255,14 @@ CREATE PROCEDURE sp_create_order(
   IN p_customer_id VARCHAR(36),
   IN p_address_id VARCHAR(36),
   IN p_coupon_code VARCHAR(40),
-  IN p_payment_method VARCHAR(20)
+  IN p_payment_method VARCHAR(20),
+  IN p_gateway_ref VARCHAR(255)
 )
 BEGIN
   DECLARE v_order_id VARCHAR(64);
   SET v_order_id = CONCAT('ORD-', UUID());
-  INSERT INTO orders (id, customer_id, address_id, status, payment_status, meta)
-  VALUES (v_order_id, p_customer_id, p_address_id, 'pending', 'pending', JSON_OBJECT('coupon', p_coupon_code, 'paymentMethod', p_payment_method));
+  INSERT INTO orders (id, customer_id, address_id, status, payment_status, gateway_ref, meta)
+  VALUES (v_order_id, p_customer_id, p_address_id, 'pending', 'pending', COALESCE(p_gateway_ref, ''), JSON_OBJECT('coupon', p_coupon_code, 'paymentMethod', p_payment_method));
   SELECT v_order_id AS order_id;
 END $$
 

@@ -8,13 +8,15 @@ CREATE PROCEDURE sp_create_order(
   IN p_customer_id VARCHAR(36),
   IN p_address_id VARCHAR(36),
   IN p_coupon_code VARCHAR(40),
-  IN p_payment_method VARCHAR(20)
+  IN p_payment_method VARCHAR(20),
+  IN p_gateway_ref VARCHAR(255)
 )
 BEGIN
   DECLARE v_order_id VARCHAR(64);
   SET v_order_id = CONCAT('ORD-', REPLACE(UUID(), '-', ''));
-  INSERT INTO orders (id, customer_id, address_id, total_amount, status, payment_status, meta)
+  INSERT INTO orders (id, customer_id, address_id, total_amount, status, payment_status, gateway_ref, meta)
   VALUES (v_order_id, p_customer_id, COALESCE(p_address_id, ''), 0, 'pending', 'pending',
+          COALESCE(p_gateway_ref, ''),
           JSON_OBJECT('coupon', COALESCE(p_coupon_code, ''), 'paymentMethod', COALESCE(p_payment_method, '')));
   SELECT v_order_id AS order_id;
 END $$

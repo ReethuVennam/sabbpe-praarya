@@ -24,12 +24,13 @@ public class OrderProcedureRepository {
 
     public FintechDtos.OrderSummaryResponse createOrder(FintechDtos.OrderCreateRequest request) {
     try {
-        List<FintechDtos.OrderSummaryResponse> rows = jdbcTemplate.query("CALL sp_create_order(?, ?, ?, ?)",
+        List<FintechDtos.OrderSummaryResponse> rows = jdbcTemplate.query("CALL sp_create_order(?, ?, ?, ?, ?)",
             ps -> {
                 ps.setString(1, request.customerId());
                 ps.setString(2, request.addressId());
                 ps.setString(3, request.couponCode());
                 ps.setString(4, request.paymentMethod());
+                ps.setString(5, request.gatewayRef());
             },
             (rs, rowNum) -> new FintechDtos.OrderSummaryResponse(
                 rs.getString("order_id"),
@@ -37,7 +38,11 @@ public class OrderProcedureRepository {
                 rs.getBigDecimal("total_amount"),
                 rs.getString("status"),
                 rs.getString("payment_status"),
-                rs.getString("created_at")
+                rs.getString("created_at"),
+                null,
+                null,
+                null,
+                null
             ));
         if (rows.isEmpty()) {
             throw new java.util.NoSuchElementException("Order not created");
@@ -50,14 +55,15 @@ public class OrderProcedureRepository {
         String meta = String.format("{\"coupon\":\"%s\",\"paymentMethod\":\"%s\"}", coupon, request.paymentMethod());
 
         jdbcTemplate.update(
-            "INSERT INTO orders(id, customer_id, address_id, total_amount, status, payment_status, meta, created_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+            "INSERT INTO orders(id, customer_id, address_id, total_amount, status, payment_status, gateway_ref, meta, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
             orderId,
             request.customerId(),
             request.addressId(),
             BigDecimal.ZERO,
             "pending",
             "pending",
+            request.gatewayRef(),
             meta
         );
 
@@ -70,7 +76,11 @@ public class OrderProcedureRepository {
                 rs.getBigDecimal("total_amount"),
                 rs.getString("status"),
                 rs.getString("payment_status"),
-                rs.getString("created_at")
+                rs.getString("created_at"),
+                null,
+                null,
+                null,
+                null
             ),
             orderId
         );
@@ -113,7 +123,11 @@ public class OrderProcedureRepository {
                         rs.getBigDecimal("total_amount"),
                         rs.getString("status"),
                         rs.getString("payment_status"),
-            rs.getString("created_at")
+            rs.getString("created_at"),
+                        rs.getString("payment_method"),
+                        rs.getInt("item_count"),
+                        rs.getString("product_names"),
+                        rs.getString("first_image")
                 ));
     }
 
@@ -142,10 +156,26 @@ public class OrderProcedureRepository {
                         rs.getBigDecimal("total_amount"),
                         rs.getString("status"),
                         rs.getString("payment_status"),
-                        rs.getString("created_at")
+                        rs.getString("created_at"),
+                        null,
+                        null,
+                        null,
+                        null
                 ));
         if (rows.isEmpty()) {
             throw new java.util.NoSuchElementException("Order not found");
+        }
+        return rows.get(0);
+    }
+
+    public String findOrderIdByGatewayRef(String gatewayRef) {
+        List<String> rows = jdbcTemplate.query(
+                "SELECT id FROM orders WHERE gateway_ref = ? ORDER BY created_at DESC LIMIT 1",
+                (rs, rowNum) -> rs.getString("id"),
+                gatewayRef
+        );
+        if (rows.isEmpty()) {
+            throw new java.util.NoSuchElementException("Order not found for gateway_ref: " + gatewayRef);
         }
         return rows.get(0);
     }
