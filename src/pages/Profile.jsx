@@ -130,13 +130,16 @@ export default function Profile() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {orders.map((order) => (
-                      <div key={order.order_id || order.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition-all">
+                    {orders.map((order, idx) => {
+                      const gwMap = JSON.parse(localStorage.getItem('order_gateway_map') || '{}')
+                      const gwRef = gwMap[order.orderId || order.order_id || order.id] || ''
+                      return (
+                      <div key={order.order_id || order.id || idx} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition-all">
                         {order.firstImage && (
                           <img src={order.firstImage} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate">{(order.order_id || order.id)?.slice(0, 12)}</p>
+                          <p className="font-semibold text-gray-900 truncate">{(order.orderId || order.order_id || order.id)?.slice(0, 12)}</p>
                           {order.productNames && (
                             <p className="text-sm text-gray-500 mt-0.5 truncate">{order.productNames}</p>
                           )}
@@ -155,9 +158,12 @@ export default function Profile() {
                           }`}>
                             {order.paymentStatus || order.payment_status || order.status || 'pending'}
                           </span>
+                          {gwRef && (
+                            <div className="text-xs text-gray-400 mt-1 font-mono">{gwRef}</div>
+                          )}
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
               </div>

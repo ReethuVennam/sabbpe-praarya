@@ -4,6 +4,7 @@ function getToken() {
   return localStorage.getItem('token')
 }
 
+
 async function request(endpoint, data = {}) {
   const token = getToken()
   const body = {
@@ -163,14 +164,17 @@ function formatTimestamp() {
 }
 
 async function sabbpeRequest(endpoint, body) {
+  console.log('SabbPe Request:', endpoint, body)
   const res = await fetch(`${SABBPE_BASE}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   const json = await res.json()
+  console.log('SabbPe Response:', json)
   if (!res.ok || json.status === false) {
-    throw new Error(json.message || `Payment failed (${res.status})`)
+    const msg = json.message || `Payment failed (${res.status})`
+    throw new Error(msg)
   }
   return json
 }
@@ -195,4 +199,24 @@ export const sabbpeAPI = {
 
   getStatus: (transactionId) =>
     sabbpeRequest('/sabbpe/v1/status', { transaction_id: transactionId }),
+}
+
+// ============================================
+// Notification Backend (Invoice Emails)
+// ============================================
+const NOTIFICATION_URL = import.meta.env.VITE_NOTIFICATION_URL || 'https://notificationsuat.sabbpe.com'
+
+export const notificationAPI = {
+  sendInvoice: async (data) => {
+    const res = await fetch(`${NOTIFICATION_URL}/api/mail/praarya-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(text || `Invoice failed (${res.status})`)
+    }
+    return res.text()
+  },
 }

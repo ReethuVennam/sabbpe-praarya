@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag, ShieldCheck, Loader2, ArrowLeft, MapPin } from 'lucide-react'
 import { cartAPI, ordersAPI, addressAPI, sabbpeAPI } from '../api'
@@ -20,6 +20,7 @@ export default function Checkout() {
   const [addressId, setAddressId] = useState('')
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [newAddress, setNewAddress] = useState({ line: '', city: '', state: '', pincode: '' })
+  const payingRef = useRef(false)
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const customerId = user?.id || user?.customerId
 
@@ -60,6 +61,8 @@ export default function Checkout() {
   const total = items.reduce((sum, i) => sum + getTotal(i), 0)
 
   const handlePay = async () => {
+    if (payingRef.current) return
+    payingRef.current = true
     setError('')
     setPaying(true)
 
@@ -78,6 +81,15 @@ export default function Checkout() {
           price: getPrice(item),
         }))
 
+      const invoiceItems = items.map((item) => ({
+        name: getName(item),
+        quantity: getQty(item),
+        unitPrice: getPrice(item).toFixed(2),
+        lineTotal: getTotal(item).toFixed(2),
+      }))
+      localStorage.setItem('last_order_items', JSON.stringify(invoiceItems))
+      localStorage.setItem('last_order_total', total.toFixed(2))
+
       const orderRef = `PRAARYA-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       const frontendUrl = window.location.origin
 
@@ -86,9 +98,9 @@ export default function Checkout() {
         try {
           const data = await ordersAPI.create({
             customerId,
-            addressId,
+            addressId: addressId || 'default',
             paymentMethod: 'SABBPE',
-            gatewayRef: orderRef,
+            couponCode: orderRef,
             items: orderItems,
           })
           orderId = data.data?.orderId || data.data?.order_id || ''
@@ -97,7 +109,12 @@ export default function Checkout() {
         }
       }
 
-      if (orderId) localStorage.setItem('pending_order_id', orderId)
+      if (orderId) {
+        localStorage.setItem('pending_order_id', orderId)
+        const gwMap = JSON.parse(localStorage.getItem('order_gateway_map') || '{}')
+        gwMap[orderId] = orderRef
+        localStorage.setItem('order_gateway_map', JSON.stringify(gwMap))
+      }
 
       await Promise.all(items.map((item) =>
         cartAPI.remove({ customerId, cartItemId: item.cartItemId || item.id }).catch(() => {})
@@ -118,6 +135,7 @@ export default function Checkout() {
       setError(err.message || 'Payment initiation failed')
     }
     setPaying(false)
+    payingRef.current = false
   }
 
   if (loading) {

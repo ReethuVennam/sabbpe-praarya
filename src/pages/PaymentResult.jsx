@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Package, Loader2 } from 'lucide-react'
-import { paymentsAPI } from '../api'
+import { notificationAPI } from '../api'
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams()
@@ -10,27 +10,41 @@ export default function PaymentResult() {
   const txnid = searchParams.get('txnid')
   const errorCode = searchParams.get('error')
   const [processing, setProcessing] = useState(false)
+  const sentRef = useRef(false)
 
   useEffect(() => {
-    if (status === 'SUCCESS') {
+    if (status === 'SUCCESS' && !sentRef.current) {
+      sentRef.current = true
       setProcessing(true)
       const pendingOrderId = localStorage.getItem('pending_order_id')
       const user = JSON.parse(localStorage.getItem('user') || 'null')
       const customerId = user?.id || user?.customerId
 
       if (pendingOrderId && customerId) {
-        paymentsAPI.updateStatus({
-          customerId,
-          orderId: pendingOrderId,
-          status: 'PAID',
-          gatewayTxnId: txnid || '',
-        }).catch(() => {}).finally(() => {
-          localStorage.removeItem('pending_order_id')
-          setProcessing(false)
-        })
+        const items = JSON.parse(localStorage.getItem('last_order_items') || '[]')
+        const total = localStorage.getItem('last_order_total') || '0'
+
+        notificationAPI.sendInvoice({
+          templateName: 'praarya_invoice',
+          clientName: user?.name || 'Customer',
+          clientEmail: user?.email || 'support@praarya.com',
+          orderNumber: pendingOrderId,
+          orderStatus: 'PAID',
+          totalAmount: parseFloat(total),
+          netAmountPaid: parseFloat(total),
+          currency: 'INR',
+          createdAt: new Date().toISOString(),
+          paidAt: new Date().toISOString(),
+          items: items.length > 0 ? items : null,
+        }).catch(() => {})
+
+        localStorage.removeItem('pending_order_id')
+        localStorage.removeItem('last_order_items')
+        localStorage.removeItem('last_order_total')
+        setProcessing(false)
       }
 
-      const timer = setTimeout(() => navigate('/profile?tab=orders', { replace: true }), 3000)
+      const timer = setTimeout(() => navigate('/profile?tab=orders', { replace: true }), 4000)
       return () => clearTimeout(timer)
     }
   }, [status, navigate, txnid])

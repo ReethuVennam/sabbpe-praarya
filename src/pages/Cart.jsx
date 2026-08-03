@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react'
-import { cartAPI } from '../api'
+import { cartAPI, productsAPI } from '../api'
+import catSoftDrinks from '../assets/cat-soft-drinks.jpg'
+import catJuices from '../assets/cat-juices.jpg'
+import catCoffeeTea from '../assets/cat-coffee-tea.jpg'
+import catEnergy from '../assets/cat-energy.jpg'
+import catSnacks from '../assets/cat-snacks.jpg'
+import catDesserts from '../assets/cat-desserts.jpg'
+
+const fallbackImgs = [catSoftDrinks, catJuices, catCoffeeTea, catEnergy, catSnacks, catDesserts]
 
 function SectionBadge({ children }) {
   return (
@@ -27,7 +35,26 @@ export default function Cart() {
     try {
       const data = await cartAPI.get(customerId || 'guest')
       const cartItems = data.data || []
-      setItems(Array.isArray(cartItems) ? cartItems : [])
+      const items = Array.isArray(cartItems) ? cartItems : []
+
+      const productIds = [...new Set(items.map((i) => i.productId || i.product_id).filter(Boolean))]
+      const imageMap = {}
+      if (productIds.length > 0) {
+        try {
+          const prodData = await productsAPI.list()
+          const products = prodData.data || []
+          products.forEach((p) => {
+            if (productIds.includes(p.productId || p.product_id)) {
+              imageMap[p.productId || p.product_id] = p.imageUrl || p.image_url
+            }
+          })
+        } catch {}
+      }
+
+      setItems(items.map((item) => ({
+        ...item,
+        imageUrl: item.imageUrl || imageMap[item.productId || item.product_id] || null,
+      })))
     } catch {
       setItems([])
     }
@@ -116,9 +143,7 @@ export default function Cart() {
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={getName(item)} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <ShoppingBag className="w-8 h-8" />
-                      </div>
+                      <img src={fallbackImgs[idx % fallbackImgs.length]} alt={getName(item)} className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
